@@ -166,11 +166,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     /** For a two-user chat, returns the peer's username. */
-    private String getOtherUser(String username) {
-        if ("user1".equals(username)) return "user2";
-        if ("user2".equals(username)) return "user1";
-        return null;
-    }
+   private String getOtherUser(String username) {
+    return activeSessions.keySet().stream()
+            .filter(u -> !u.equals(username))
+            .findFirst()
+            .orElse(null);
+}
+       
+    
 
     public Map<String, WebSocketSession> getActiveSessions() {
         return activeSessions;
