@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>P2P Chat</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: monospace;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #111;
+      margin-bottom: 28px;
+    }
+
+    /* LOGIN */
+    #login-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 24px;
+    }
+
+    #login-panel h2 { font-size: 0.95rem; color: #333; margin-bottom: 4px; }
+
+    #login-panel input {
+      padding: 8px 10px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      outline: none;
+      background: #fafafa;
+    }
+
+    #login-panel input:focus { border-color: #555; }
+
+    #login-panel button {
+      padding: 9px;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    #login-panel button:hover { background: #333; }
+
+    #login-error { color: #c00; font-size: 0.78rem; min-height: 14px; }
+
+    /* CHAT */
+    #chat-panel {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 620px;
+      height: 82vh;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    #chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #f7f7f7;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.82rem;
+      color: #444;
+    }
+
+    #chat-header .status { display: flex; align-items: center; gap: 6px; }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+
+    #chat-header button {
+      padding: 4px 12px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      background: #fff;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #chat-header button:hover { background: #f0f0f0; }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.88rem;
+    }
+
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+    .msg {
+      max-width: 70%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .msg .meta { font-size: 0.7rem; color: #999; margin-bottom: 3px; }
+
+    .msg.mine  { align-self: flex-end;   background: #111; color: #fff; }
+    .msg.mine .meta { color: #aaa; }
+    .msg.mine a { color: #a5b4fc; text-decoration: underline; }
+
+    .msg.theirs { align-self: flex-start; background: #ebebeb; color: #111; }
+    .msg.theirs a { color: #2563eb; text-decoration: underline; }
+
+    .msg.system {
+      align-self: center;
+      background: none;
+      color: #aaa;
+      font-size: 0.75rem;
+      font-style: italic;
+      padding: 2px 8px;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    #input-area { display: flex; border-top: 1px solid #ddd; }
+
+    #msg-input {
+      flex: 1;
+      padding: 11px 14px;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    #send-btn {
+      padding: 11px 20px;
+      background: #111;
+      color: #fff;
+      border: none;
+      font-family: monospace;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    #send-btn:hover { background: #333; }
+    #send-btn:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<h1>WebSocket P2P Chat</h1>
+
+<!-- LOGIN -->
+<div id="login-panel">
+  <h2>Connect</h2>
+  <input type="text"     id="username" placeholder="Username" autocomplete="off"/>
+  <input type="password" id="password" placeholder="Password"/>
+  <button onclick="connect()">Join Chat</button>
+  <div id="login-error"></div>
+</div>
+
+<!-- CHAT -->
+<div id="chat-panel">
+  <div id="chat-header">
+    <div class="status">
+      <div class="dot"></div>
+      <span id="header-user"></span>
+    </div>
+    <button onclick="disconnect()">Leave</button>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="input-area">
+    <input
+      type="text"
+      id="msg-input"
+      placeholder="Type a message or paste a link…"
+      onkeydown="if(event.key==='Enter') sendMessage()"
+    />
+    <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
+  </div>
+</div>
+
+<script>
+  let ws = null;
+  let currentUser = '';
+
+  function connect() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errEl    = document.getElementById('login-error');
+
+    if (!username || !password) { errEl.textContent = 'Please fill in both fields.'; return; }
+    errEl.textContent = '';
+
+    ws = new WebSocket(
+      `ws://localhost:8080/chat?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+    );
+
+    ws.onopen = () => {
+      currentUser = username;
+      document.getElementById('login-panel').style.display = 'none';
+      document.getElementById('chat-panel').style.display  = 'flex';
+      document.getElementById('header-user').textContent   = username;
+      document.getElementById('send-btn').disabled         = false;
+      document.getElementById('msg-input').focus();
+    };
+
+    ws.onmessage = (e) => renderMessage(JSON.parse(e.data));
+
+    ws.onerror = () => {
+      errEl.textContent = 'Connection failed — is the server running?';
+      ws = null;
+    };
+
+    ws.onclose = (e) => {
+      if (e.code !== 1000) appendSystem('Connection closed unexpectedly.');
+      document.getElementById('send-btn').disabled = true;
+    };
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('msg-input');
+    const text  = input.value.trim();
+    if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ content: text, type: 'CHAT' }));
+    input.value = '';
+  }
+
+  function disconnect() {
+    if (ws) ws.close(1000, 'User left');
+    document.getElementById('chat-panel').style.display  = 'none';
+    document.getElementById('login-panel').style.display = 'flex';
+    document.getElementById('messages').innerHTML        = '';
+    document.getElementById('login-error').textContent  = '';
+    currentUser = ''; ws = null;
+  }
+
+  function renderMessage(msg) {
+    if (msg.type === 'JOIN' || msg.type === 'LEAVE' || msg.sender === 'System') {
+      appendSystem(msg.content); return;
+    }
+    const isMine = msg.sender === currentUser;
+    const div    = document.createElement('div');
+    div.className = 'msg ' + (isMine ? 'mine' : 'theirs');
+    // escapeHtml runs first (security), linkify runs after (turns URLs into clickable links)
+    div.innerHTML =
+      `<div class="meta">${msg.sender} · ${msg.timestamp}</div>` +
+      `<div>${linkify(escapeHtml(msg.content))}</div>`;
+    appendToChat(div);
+  }
+
+  function appendSystem(text) {
+    const div = document.createElement('div');
+    div.className   = 'msg system';
+    div.textContent = text;
+    appendToChat(div);
+  }
+
+  function appendToChat(el) {
+    const box = document.getElementById('messages');
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // Escapes HTML — prevents any injected markup from executing
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Detects http/https URLs and makes them clickable
+  // Plain text messages pass through this completely unchanged
+  function linkify(text) {
+    return text.replace(
+      /(https?:\/\/[^\s<>"&]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+  }
+</script>
+</body>
+</html>

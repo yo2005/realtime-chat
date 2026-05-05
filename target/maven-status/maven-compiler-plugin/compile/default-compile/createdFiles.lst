@@ -1,0 +1,9 @@
+com\chat\handler\ChatWebSocketHandler.class
+com\chat\config\WebSocketConfig.class
+com\chat\service\MessageHistoryService.class
+com\chat\handler\AuthHandshakeInterceptor.class
+com\chat\model\ChatMessage$MessageType.class
+com\chat\model\ChatMessage.class
+com\chat\service\AuthService.class
+com\chat\ChatApplication.class
+com\chat\config\SecurityConfig.class
